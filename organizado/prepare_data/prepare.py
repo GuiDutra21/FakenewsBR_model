@@ -712,7 +712,10 @@ def main(argv=None) -> int:
     ap.add_argument("--sanitized", default=str(ROOT / "data" / "FakenewsBR_sanitized_v6.csv"))
     ap.add_argument("--labels", default=str(ROOT / "data" / "FakenewsBR_v6_labels.csv"))
     ap.add_argument("--provenance", default=str(ROOT / "data" / "FakenewsBR_v6_provenance.csv"))
-    ap.add_argument("--out-dir", default="models/v6/processed")
+    ap.add_argument(
+        "--out-dir",
+        default=str(ROOT / "organizado" / "prepare_data" / "processed"),
+    )
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--test-frac", type=float, default=0.15)
     ap.add_argument("--val-sel-frac", type=float, default=0.10)
