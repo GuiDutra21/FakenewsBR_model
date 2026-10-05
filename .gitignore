@@ -22,3 +22,14 @@ __pycache__/
 *.pyo
 .ipynb_checkpoints/
 *.pid
+
+# Artefatos gerados pelo treinamento (modelos, otimizadores e predicoes)
+organizado/train/artifacts/
+models/v6/artifacts/
+
+# Datasets processados gerados localmente
+organizado/prepare_data/processed/
+models/v6/processed/
+
+# Arquivos do macOS
+.DS_Store
