@@ -27,6 +27,12 @@ __pycache__/
 organizado/train/artifacts/
 models/v6/artifacts/
 
+# Experimentos de hiperparametros: checkpoints e saidas pesadas
+organizado/train/experimentos/runs/*/best/
+organizado/train/experimentos/runs/*/last/
+organizado/train/experimentos/runs/*/predictions.csv
+organizado/train/experimentos/logs/
+
 # Datasets processados gerados localmente
 organizado/prepare_data/processed/
 models/v6/processed/

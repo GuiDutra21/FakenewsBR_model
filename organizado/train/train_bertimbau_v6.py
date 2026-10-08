@@ -10,7 +10,7 @@ Adaptacao do trainer v4 (`models/v4/train_bertimbau_v4.py`, testado) para o pool
 COMPLETO da v6 (91.080 linhas). Defaults v6:
 
   --split-col full_iid --eval-col full_iid --eval-value test
-  --dfr-weights cell --weight-clip 25 --epochs 2
+  --dfr-weights cell --weight-clip 25 --epochs 15 (teto; early stopping decide)
 
 --device auto continua CUDA se existir, senao CPU. A GPU do Mac (Metal)
 so entra com --device mps, para o mesmo comando no notebook Windows seguir
@@ -515,6 +515,16 @@ def infer(model, ds, collate, batch_size: int, device, use_amp: bool,
     return res
 
 
+def confusion_metrics(cm) -> dict:
+    """acc / macro-F1 / F1(fake) a partir da contagem [tn, fp, fn, tp]."""
+    tn, fp, fn, tp = (float(x) for x in cm)
+    n = tn + fp + fn + tp
+    f1_fake = 2 * tp / (2 * tp + fp + fn) if (tp + fp + fn) else 0.0
+    f1_true = 2 * tn / (2 * tn + fn + fp) if (tn + fn + fp) else 0.0
+    return {"acc": (tp + tn) / n if n else float("nan"),
+            "macro_f1": (f1_fake + f1_true) / 2, "f1_fake": f1_fake}
+
+
 def sigmoid_z(logits: np.ndarray) -> np.ndarray:
     z = _decision(logits)
     return 1.0 / (1.0 + np.exp(-np.clip(z, -700, 700)))
@@ -700,13 +710,19 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--batch-size", type=int, default=32)
     ap.add_argument("--eval-batch-size", type=int, default=128)
     ap.add_argument("--grad-accum", type=int, default=1)
-    ap.add_argument("--epochs", type=int, default=2)
+    ap.add_argument("--epochs", type=int, default=15,
+                    help="teto de epocas; quem para o treino e o early stopping "
+                         "(--patience/--min-delta)")
     ap.add_argument("--patience", type=int, default=1)
     ap.add_argument("--min-delta", type=float, default=0.005)
     ap.add_argument("--best-metric", choices=["worst_group", "macro_f1"],
                     default="worst_group")
     ap.add_argument("--lr", type=float, default=2e-5)
     ap.add_argument("--warmup-frac", type=float, default=0.10)
+    ap.add_argument("--warmup-steps", type=int, default=None,
+                    help="warmup em passos absolutos; tem precedencia sobre "
+                         "--warmup-frac (com teto alto de epocas, a fracao viraria "
+                         "um warmup de varias epocas)")
     ap.add_argument("--weight-decay", type=float, default=0.01)
     ap.add_argument("--clip", type=float, default=1.0)
     ap.add_argument("--freeze-layers", type=int, default=6)
@@ -725,6 +741,10 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--workers", type=int, default=2)
     ap.add_argument("--calib-col", default="val_calib")
     ap.add_argument("--threshold-primary", type=float, default=0.5)
+    ap.add_argument("--train-eval-n", type=int, default=None,
+                    help="amostra fixa do treino avaliada em modo eval ao fim de "
+                         "cada epoca (overfitting: treino x val_sel). "
+                         "Default = tamanho da val_sel; 0 desliga")
     ap.add_argument("--save-every-epoch", choices=["both", "last", "best", "none"],
                     default="both")
     ap.add_argument("--predict-all", action=argparse.BooleanOptionalAction,
@@ -1249,6 +1269,16 @@ def main(argv=None) -> int:
     ds_vs = TextDS((text_fn(t) for t in val_sel[TEXT_COL]), val_sel["target"], tok, args.max_length)
     ds_vc = TextDS((text_fn(t) for t in val_calib[TEXT_COL]), val_calib["target"], tok, args.max_length)
     ds_ev = TextDS((text_fn(t) for t in eval_df[TEXT_COL]), eval_df["target"], tok, args.max_length)
+    # Amostra fixa do treino (estratificada, mesmo tamanho da val_sel) avaliada
+    # em modo eval ao fim de cada epoca: as metricas "running" do loop sofrem
+    # dropout e pesos mudando, entao nao sao comparaveis com a val_sel.
+    n_tr_eval = len(val_sel) if args.train_eval_n is None else args.train_eval_n
+    ds_tr_eval, y_tr_eval = None, None
+    if n_tr_eval > 0:
+        tr_eval_df = strat_subset(train_df, n_tr_eval, args.seed)
+        y_tr_eval = tr_eval_df["target"].to_numpy().astype(int)
+        ds_tr_eval = TextDS((text_fn(t) for t in tr_eval_df[TEXT_COL]), y_tr_eval,
+                            tok, args.max_length)
     collate = DataCollatorWithPadding(tok)
     train_collate = TrainCollator(collate)
     eval_collate = EvalCollator(collate)
@@ -1309,7 +1339,8 @@ def main(argv=None) -> int:
     effective = args.batch_size * args.grad_accum
     steps_per_epoch = math.ceil(len(ds_tr) / effective)
     total_steps = steps_per_epoch * args.epochs
-    warmup_steps = int(args.warmup_frac * total_steps)
+    warmup_steps = args.warmup_steps if args.warmup_steps is not None \
+        else int(args.warmup_frac * total_steps)
     sched = get_scheduler("linear", opt, num_warmup_steps=warmup_steps,
                           num_training_steps=total_steps)
     print(f"[E4] steps/epoca={steps_per_epoch} total={total_steps} "
@@ -1353,7 +1384,8 @@ def main(argv=None) -> int:
             return 2
         else:
             reset_accelerator_memory(device)
-            probe_ids = torch.randint(0, 30000, (args.batch_size, args.probe_max_length),
+            probe_ids = torch.randint(0, model.config.vocab_size,
+                                      (args.batch_size, args.probe_max_length),
                                       device=device)
             probe_mask = torch.ones_like(probe_ids)
             probe_lbl = torch.randint(0, 2, (args.batch_size,), device=device)
@@ -1542,6 +1574,7 @@ def main(argv=None) -> int:
         if device.type in ("cuda", "mps"):
             reset_accelerator_memory(device)
         loss_sum, tokens_paid, samples = 0.0, 0, 0
+        cm = np.zeros(4, dtype=np.int64)  # [tn, fp, fn, tp] running da epoca
         accum = 0
         n_batches = len(train_loader)
         progress = tqdm(train_loader, total=n_batches,
@@ -1572,6 +1605,9 @@ def main(argv=None) -> int:
                 progress.write(
                     f"[E9] MPS primeiro forward: alocado="
                     f"{accelerator_alloc_gb(device):.2f} GB")
+            with torch.no_grad():
+                pred = logits.argmax(-1)
+                cm += torch.bincount(labels * 2 + pred, minlength=4).cpu().numpy()
             ce = ce_none(logits, labels)
             raw = (ce * sample_w[bidx]).mean() if sample_w is not None else ce.mean()
             loss = raw / args.grad_accum
@@ -1594,13 +1630,25 @@ def main(argv=None) -> int:
                 global_step += 1
                 accum = 0
             loss_sum += float(raw.item())
+            m_run = confusion_metrics(cm)
             progress.set_postfix(loss=f"{loss_sum / step:.4f}",
+                                 acc=f"{m_run['acc']:.4f}",
+                                 f1=f"{m_run['macro_f1']:.4f}",
                                  lr=f"{sched.get_last_lr()[0]:.2e}",
                                  refresh=False)
         progress.close()
+        m_run = confusion_metrics(cm)
 
         train_s = time.perf_counter() - t0
         timing["train_s"] += train_s
+        # treino em modo eval (amostra fixa) -- comparavel com a val_sel
+        m_tr, tr_eval_loss = None, None
+        if ds_tr_eval is not None:
+            l_tr = infer(model, ds_tr_eval, eval_collate, args.eval_batch_size, device,
+                         use_amp, amp_dtype, desc=f"treino-eval epoca {epoch + 1}")
+            m_tr = core_metrics(y_tr_eval, sigmoid_z(l_tr))
+            tr_eval_loss = float(ce_mean(torch.tensor(l_tr),
+                                         torch.tensor(y_tr_eval)).item())
         # inferencia de validacao (val_sel)
         t_val = time.perf_counter()
         l_vs = infer(model, ds_vs, eval_collate, args.eval_batch_size, device,
@@ -1625,7 +1673,14 @@ def main(argv=None) -> int:
         rec = {
             "epoch": epoch + 1,
             "train_loss": round(loss_sum / max(n_batches, 1), 5),
+            "train_acc_running": round(m_run["acc"], 5),
+            "train_macro_f1_running": round(m_run["macro_f1"], 5),
+            "train_loss_eval": None if tr_eval_loss is None else round(tr_eval_loss, 5),
+            "train_acc": None if m_tr is None else round(m_tr["acc"], 5),
+            "train_macro_f1": None if m_tr is None else round(m_tr["macro_f1"], 5),
+            "train_f1_fake": None if m_tr is None else round(m_tr["f1_fake"], 5),
             "val_loss": round(val_loss, 5),
+            "val_acc": round(m_vs["acc"], 5),
             "val_macro_f1": round(m_vs["macro_f1"], 5),
             "val_f1_fake": round(m_vs["f1_fake"], 5),
             "val_worst_group": None if np.isnan(wg_vs) else round(float(wg_vs), 5),
@@ -1645,6 +1700,17 @@ def main(argv=None) -> int:
               f"tokens/s={rec['tokens_per_s']:.0f} "
               f"({rec['seconds']:.0f}s, vram={rec['vram_peak_gb']:.2f}GB)"
               + ("  [melhor]" if improved else ""))
+        if m_tr is not None:
+            print(f"      treino(eval, n={len(y_tr_eval)}): loss={tr_eval_loss:.4f} "
+                  f"acc={m_tr['acc']:.4f} macro_f1={m_tr['macro_f1']:.4f} "
+                  f"f1_fake={m_tr['f1_fake']:.4f}")
+        print(f"      val_sel       (n={len(y_vs)}): loss={val_loss:.4f} "
+              f"acc={m_vs['acc']:.4f} macro_f1={m_vs['macro_f1']:.4f} "
+              f"f1_fake={m_vs['f1_fake']:.4f}")
+        if m_tr is not None:
+            print(f"      gap treino-val: macro_f1={m_tr['macro_f1'] - m_vs['macro_f1']:+.4f} "
+                  f"loss={val_loss - tr_eval_loss:+.4f}  (gap crescendo entre "
+                  f"epocas = sinal de overfitting)")
 
         if args.save_every_epoch in ("both", "last"):
             save_checkpoint(out_dir / "last", with_opt=True)

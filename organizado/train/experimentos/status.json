@@ -1,0 +1,286 @@
+{
+  "BASE_s42": {
+    "estado": "ok",
+    "rc": 0,
+    "minutos": 11.2,
+    "flags": [
+      "--seed",
+      "42",
+      "--run-id",
+      "BASE_s42",
+      "--out",
+      "D:\\residencia\\FakenewsBR_model\\organizado\\train\\experimentos\\runs\\BASE_s42"
+    ],
+    "log": "BASE_s42.log"
+  },
+  "BASE_s43": {
+    "estado": "ok",
+    "rc": 0,
+    "minutos": 8.7,
+    "flags": [
+      "--seed",
+      "43",
+      "--run-id",
+      "BASE_s43",
+      "--out",
+      "D:\\residencia\\FakenewsBR_model\\organizado\\train\\experimentos\\runs\\BASE_s43"
+    ],
+    "log": "BASE_s43.log"
+  },
+  "BASE_s44": {
+    "estado": "ok",
+    "rc": 0,
+    "minutos": 11.2,
+    "flags": [
+      "--seed",
+      "44",
+      "--run-id",
+      "BASE_s44",
+      "--out",
+      "D:\\residencia\\FakenewsBR_model\\organizado\\train\\experimentos\\runs\\BASE_s44"
+    ],
+    "log": "BASE_s44.log"
+  },
+  "T1_lr3e-5_s42": {
+    "estado": "ok",
+    "rc": 0,
+    "minutos": 10.8,
+    "flags": [
+      "--lr",
+      "3e-5",
+      "--seed",
+      "42",
+      "--run-id",
+      "T1_lr3e-5_s42",
+      "--out",
+      "D:\\residencia\\FakenewsBR_model\\organizado\\train\\experimentos\\runs\\T1_lr3e-5_s42"
+    ],
+    "log": "T1_lr3e-5_s42.log"
+  },
+  "T2_lr5e-5_s42": {
+    "estado": "ok",
+    "rc": 0,
+    "minutos": 16.6,
+    "flags": [
+      "--lr",
+      "5e-5",
+      "--seed",
+      "42",
+      "--run-id",
+      "T2_lr5e-5_s42",
+      "--out",
+      "D:\\residencia\\FakenewsBR_model\\organizado\\train\\experimentos\\runs\\T2_lr5e-5_s42"
+    ],
+    "log": "T2_lr5e-5_s42.log"
+  },
+  "T3_patience2_s42": {
+    "estado": "ok",
+    "rc": 0,
+    "minutos": 14.0,
+    "flags": [
+      "--patience",
+      "2",
+      "--seed",
+      "42",
+      "--run-id",
+      "T3_patience2_s42",
+      "--out",
+      "D:\\residencia\\FakenewsBR_model\\organizado\\train\\experimentos\\runs\\T3_patience2_s42"
+    ],
+    "log": "T3_patience2_s42.log"
+  },
+  "T4_freeze3_s42": {
+    "estado": "ok",
+    "rc": 0,
+    "minutos": 20.1,
+    "flags": [
+      "--freeze-layers",
+      "3",
+      "--seed",
+      "42",
+      "--run-id",
+      "T4_freeze3_s42",
+      "--out",
+      "D:\\residencia\\FakenewsBR_model\\organizado\\train\\experimentos\\runs\\T4_freeze3_s42"
+    ],
+    "log": "T4_freeze3_s42.log"
+  },
+  "T5_freeze0_s42": {
+    "estado": "ok",
+    "rc": 0,
+    "minutos": 11.2,
+    "flags": [
+      "--freeze-layers",
+      "0",
+      "--seed",
+      "42",
+      "--run-id",
+      "T5_freeze0_s42",
+      "--out",
+      "D:\\residencia\\FakenewsBR_model\\organizado\\train\\experimentos\\runs\\T5_freeze0_s42"
+    ],
+    "log": "T5_freeze0_s42.log"
+  },
+  "T6_maxlen256_s42": {
+    "estado": "ok",
+    "rc": 0,
+    "minutos": 18.9,
+    "flags": [
+      "--max-length",
+      "256",
+      "--seed",
+      "42",
+      "--run-id",
+      "T6_maxlen256_s42",
+      "--out",
+      "D:\\residencia\\FakenewsBR_model\\organizado\\train\\experimentos\\runs\\T6_maxlen256_s42"
+    ],
+    "log": "T6_maxlen256_s42.log"
+  },
+  "T7_clip10_s42": {
+    "estado": "ok",
+    "rc": 0,
+    "minutos": 10.8,
+    "flags": [
+      "--weight-clip",
+      "10",
+      "--seed",
+      "42",
+      "--run-id",
+      "T7_clip10_s42",
+      "--out",
+      "D:\\residencia\\FakenewsBR_model\\organizado\\train\\experimentos\\runs\\T7_clip10_s42"
+    ],
+    "log": "T7_clip10_s42.log"
+  },
+  "T8_droptiers_s42": {
+    "estado": "ok",
+    "rc": 0,
+    "minutos": 5.7,
+    "flags": [
+      "--drop-tiers",
+      "llm_local,corroborated",
+      "--seed",
+      "42",
+      "--run-id",
+      "T8_droptiers_s42",
+      "--out",
+      "D:\\residencia\\FakenewsBR_model\\organizado\\train\\experimentos\\runs\\T8_droptiers_s42"
+    ],
+    "log": "T8_droptiers_s42.log"
+  },
+  "T2_lr5e-5_s43": {
+    "estado": "ok",
+    "rc": 0,
+    "minutos": 8.3,
+    "flags": [
+      "--lr",
+      "5e-5",
+      "--seed",
+      "43",
+      "--run-id",
+      "T2_lr5e-5_s43",
+      "--out",
+      "D:\\residencia\\FakenewsBR_model\\organizado\\train\\experimentos\\runs\\T2_lr5e-5_s43"
+    ],
+    "log": "T2_lr5e-5_s43.log"
+  },
+  "T2_lr5e-5_s44": {
+    "estado": "ok",
+    "rc": 0,
+    "minutos": 11.1,
+    "flags": [
+      "--lr",
+      "5e-5",
+      "--seed",
+      "44",
+      "--run-id",
+      "T2_lr5e-5_s44",
+      "--out",
+      "D:\\residencia\\FakenewsBR_model\\organizado\\train\\experimentos\\runs\\T2_lr5e-5_s44"
+    ],
+    "log": "T2_lr5e-5_s44.log"
+  },
+  "T6_maxlen256_s43": {
+    "estado": "ok",
+    "rc": 0,
+    "minutos": 14.0,
+    "flags": [
+      "--max-length",
+      "256",
+      "--seed",
+      "43",
+      "--run-id",
+      "T6_maxlen256_s43",
+      "--out",
+      "D:\\residencia\\FakenewsBR_model\\organizado\\train\\experimentos\\runs\\T6_maxlen256_s43"
+    ],
+    "log": "T6_maxlen256_s43.log"
+  },
+  "T6_maxlen256_s44": {
+    "estado": "ok",
+    "rc": 0,
+    "minutos": 13.2,
+    "flags": [
+      "--max-length",
+      "256",
+      "--seed",
+      "44",
+      "--run-id",
+      "T6_maxlen256_s44",
+      "--out",
+      "D:\\residencia\\FakenewsBR_model\\organizado\\train\\experimentos\\runs\\T6_maxlen256_s44"
+    ],
+    "log": "T6_maxlen256_s44.log"
+  },
+  "T4_freeze3_s43": {
+    "estado": "ok",
+    "rc": 0,
+    "minutos": 10.2,
+    "flags": [
+      "--freeze-layers",
+      "3",
+      "--seed",
+      "43",
+      "--run-id",
+      "T4_freeze3_s43",
+      "--out",
+      "D:\\residencia\\FakenewsBR_model\\organizado\\train\\experimentos\\runs\\T4_freeze3_s43"
+    ],
+    "log": "T4_freeze3_s43.log"
+  },
+  "T4_freeze3_s44": {
+    "estado": "ok",
+    "rc": 0,
+    "minutos": 14.4,
+    "flags": [
+      "--freeze-layers",
+      "3",
+      "--seed",
+      "44",
+      "--run-id",
+      "T4_freeze3_s44",
+      "--out",
+      "D:\\residencia\\FakenewsBR_model\\organizado\\train\\experimentos\\runs\\T4_freeze3_s44"
+    ],
+    "log": "T4_freeze3_s44.log"
+  },
+  "T9_freeze0_lr1e-5_s42": {
+    "estado": "ok",
+    "rc": 0,
+    "minutos": 18.0,
+    "flags": [
+      "--freeze-layers",
+      "0",
+      "--lr",
+      "1e-5",
+      "--seed",
+      "42",
+      "--run-id",
+      "T9_freeze0_lr1e-5_s42",
+      "--out",
+      "D:\\residencia\\FakenewsBR_model\\organizado\\train\\experimentos\\runs\\T9_freeze0_lr1e-5_s42"
+    ],
+    "log": "T9_freeze0_lr1e-5_s42.log"
+  }
+}
