@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 """Fila sequencial dos testes de hiperparametros do train_bertimbau_v6.py.
 
-Uso (a partir da raiz do repositorio, d:/residencia):
-    python FakenewsBR_model/organizado/train/experimentos/run_experiments.py --fase 1
-    python FakenewsBR_model/organizado/train/experimentos/run_experiments.py --so T1_lr3e-5_s43 T1_lr3e-5_s44
+Uso (a partir da raiz do repositorio):
+    python pipeline/experiments/run_experiments.py --fase 1
+    python pipeline/experiments/run_experiments.py --so T1_lr3e-5_s43 T1_lr3e-5_s44
 
 - Roda um teste por vez (uma GPU so; em paralelo faltaria memoria).
 - Pula testes que ja tem metrics.json (da para interromper e retomar a fila).
@@ -22,10 +22,10 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[4]          # d:/residencia
-EXP_DIR = Path(__file__).resolve().parent           # .../train/experimentos
-TRAIN = EXP_DIR.parent / "train_bertimbau_v6.py"
-DATA_DIR = EXP_DIR.parents[1] / "prepare_data" / "processed"
+ROOT = Path(__file__).resolve().parents[2]          # raiz do repositorio
+EXP_DIR = Path(__file__).resolve().parent           # pipeline/experiments
+TRAIN = EXP_DIR.parent / "train" / "train_bertimbau_v6.py"
+DATA_DIR = EXP_DIR.parent / "prepare" / "processed"
 
 BASE_ARGS = [
     "--data", str(DATA_DIR / "v6_pool.parquet"),
@@ -51,6 +51,10 @@ TESTES = {
     "T8_droptiers": ["--drop-tiers", "llm_local,corroborated"],
     # T5 parou na epoca 1 com lr 2e-5; encoder inteiro costuma pedir lr menor
     "T9_freeze0_lr1e-5": ["--freeze-layers", "0", "--lr", "1e-5"],
+    # BASE sem as copias extras de duplicatas exatas (pipeline/prepare/dedup_exatas.py);
+    # flags repetidas sobrescrevem as de BASE_ARGS
+    "D1_dedup": ["--data", str(DATA_DIR.parent / "processed_dedup" / "v6_pool.parquet"),
+                 "--splits", str(DATA_DIR.parent / "processed_dedup" / "v6_splits.parquet")],
 }
 
 FASES = {

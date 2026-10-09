@@ -24,18 +24,25 @@ __pycache__/
 *.pid
 
 # Artefatos gerados pelo treinamento (modelos, otimizadores e predicoes)
-organizado/train/artifacts/
-models/v6/artifacts/
+pipeline/train/artifacts/
+legacy/models/v6/artifacts/
 
 # Experimentos de hiperparametros: checkpoints e saidas pesadas
-organizado/train/experimentos/runs/*/best/
-organizado/train/experimentos/runs/*/last/
-organizado/train/experimentos/runs/*/predictions.csv
-organizado/train/experimentos/logs/
+pipeline/experiments/runs/*/best/
+pipeline/experiments/runs/*/last/
+pipeline/experiments/runs/*/predictions.csv
+pipeline/experiments/logs/
 
 # Datasets processados gerados localmente
-organizado/prepare_data/processed/
-models/v6/processed/
+pipeline/prepare/processed/
+pipeline/prepare/processed_dedup/
+legacy/models/v6/processed/
+
+# Pacote autocontido do notebook de avaliacao (pesos, parquet e predicoes pesados)
+notebook/modelo/
+notebook/dados/
+notebook/comparacao/
+notebook/resultados/predictions.csv
 
 # Arquivos do macOS
 .DS_Store

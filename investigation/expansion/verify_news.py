@@ -458,7 +458,7 @@ def main():
     ap.add_argument("--min-corroboracao", type=int, default=3)
     ap.add_argument("--no-semantic", action="store_true",
                     help="usa apenas match lexical (sem encoder local)")
-    ap.add_argument("--onnx", default="models/artifacts/bertimbau_ft.onnx")
+    ap.add_argument("--onnx", default="legacy/models/artifacts/bertimbau_ft.onnx")
     ap.add_argument("--provider", default="CPUExecutionProvider")
     ap.add_argument("--sim-factcheck", type=float, default=0.80)
     ap.add_argument("--sim-corroboracao", type=float, default=0.75)

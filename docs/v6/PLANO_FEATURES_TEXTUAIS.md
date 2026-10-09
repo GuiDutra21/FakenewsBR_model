@@ -2,7 +2,7 @@
 
 ## Escopo
 
-- Atualizar `organizado/prepare_data/prepare.py` para gerar três colunas novas no parquet:
+- Atualizar `pipeline/prepare/prepare.py` para gerar três colunas novas no parquet:
   `avg_sentence_words`, `emoji_count` e `spelling_error_rate`.
 - Usar `language_tool_python` localmente, com `pt-BR`/`pt-PT` conforme a variante
   do texto, contando apenas matches de erro ortográfico e normalizando pela
@@ -12,7 +12,7 @@
 
 ## Integração no treinamento
 
-- Alterar `organizado/train/train_bertimbau_v6.py` com uma flag
+- Alterar `pipeline/train/train_bertimbau_v6.py` com uma flag
   `--extra-features`, mantendo o comportamento text-only quando ela não for
   usada.
 - Estender dataset, collators, inferência e predição para transportar as três
@@ -32,7 +32,7 @@
   python3 -m pip install language-tool-python
   ```
 
-- Regenerar os parquets de `organizado/prepare_data/processed/`, validar as
+- Regenerar os parquets de `pipeline/prepare/processed/`, validar as
   novas colunas e executar um smoke test.
 - Criar uma nova pasta de artefatos para o modelo com features. O checkpoint
   atual não será sobrescrito nem retomado diretamente, pois a arquitetura

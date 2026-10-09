@@ -17,8 +17,8 @@ Perguntas que este script responde com dado (e nao com leitura de log):
   4. A calibracao do FT-classifier cai na armadilha do prior (Platt na val cheia)?
 
 Uso:
-    python -m investigation.reverse_analysis.predict_ft   # uma vez, ~12 min
-    python -m investigation.reverse_analysis.analyze
+    PYTHONPATH=legacy python -m investigation.reverse_analysis.predict_ft   # uma vez, ~12 min
+    PYTHONPATH=legacy python -m investigation.reverse_analysis.analyze
 """
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ from models import data as D
 from models import evaluate as E
 from models import score as S
 
-ART = Path("models/artifacts")
+ART = Path("legacy/models/artifacts")
 OUT = Path("investigation/reverse_analysis/output")
 CS = [0.01, 0.03, 0.1, 0.3, 1.0, 3.0]
 NEAR_DUP_COS = 0.90

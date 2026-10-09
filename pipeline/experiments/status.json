@@ -282,5 +282,23 @@
       "D:\\residencia\\FakenewsBR_model\\organizado\\train\\experimentos\\runs\\T9_freeze0_lr1e-5_s42"
     ],
     "log": "T9_freeze0_lr1e-5_s42.log"
+  },
+  "D1_dedup_s42": {
+    "estado": "ok",
+    "rc": 0,
+    "minutos": 11.0,
+    "flags": [
+      "--data",
+      "D:\\residencia\\FakenewsBR_model\\organizado\\prepare_data\\processed_dedup\\v6_pool.parquet",
+      "--splits",
+      "D:\\residencia\\FakenewsBR_model\\organizado\\prepare_data\\processed_dedup\\v6_splits.parquet",
+      "--seed",
+      "42",
+      "--run-id",
+      "D1_dedup_s42",
+      "--out",
+      "D:\\residencia\\FakenewsBR_model\\organizado\\train\\experimentos\\runs\\D1_dedup_s42"
+    ],
+    "log": "D1_dedup_s42.log"
   }
 }

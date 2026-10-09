@@ -42,7 +42,8 @@ import pandas as pd
 import torch
 import torch.nn as nn
 from sklearn.metrics import (accuracy_score, average_precision_score,
-                             brier_score_loss, f1_score, roc_auc_score)
+                             brier_score_loss, f1_score, precision_score,
+                             roc_auc_score)
 from sklearn.model_selection import train_test_split
 from torch.optim import AdamW
 from torch.utils.data import BatchSampler, DataLoader, Dataset
@@ -138,6 +139,12 @@ def core_metrics(y: np.ndarray, p: np.ndarray, threshold: float = 0.5) -> dict:
         "acc": float(accuracy_score(y, pred)),
         "macro_f1": float(f1_score(y, pred, average="macro")) if len(np.unique(y)) > 1 else float("nan"),
         "f1_fake": float(f1_score(y, pred, zero_division=0)),
+        "f1_true": float(f1_score(y, pred, pos_label=0, zero_division=0)),
+        "prec_fake": float(precision_score(y, pred, zero_division=0)),
+        "prec_true": float(precision_score(y, pred, pos_label=0, zero_division=0)),
+        # acuracia da classe = recall da classe (acertos entre os exemplos dela)
+        "acc_fake": float((pred[y == 1] == 1).mean()) if (y == 1).any() else float("nan"),
+        "acc_true": float((pred[y == 0] == 0).mean()) if (y == 0).any() else float("nan"),
         "brier": float(brier_score_loss(y, p)) if len(np.unique(y)) > 1 else float("nan"),
         "ece": expected_calibration_error(p, y),
     }
@@ -173,8 +180,8 @@ def per_group(df: pd.DataFrame, y: np.ndarray, p: np.ndarray,
         rows.append(m)
     if not rows:
         return pd.DataFrame()
-    cols = [col, "n", "minoria_n", "fake_%", "acc", "macro_f1", "f1_fake",
-            "roc_auc", "pr_auc", "ece", "confiavel"]
+    cols = [col, "n", "minoria_n", "fake_%", "acc", "acc_fake", "acc_true",
+            "macro_f1", "f1_fake", "f1_true", "roc_auc", "pr_auc", "ece", "confiavel"]
     return pd.DataFrame(rows)[cols].sort_values("macro_f1", na_position="last")
 
 
@@ -208,7 +215,12 @@ def report(df: pd.DataFrame, y: np.ndarray, p: np.ndarray, title: str,
     print(f"\n{'='*70}\n{title}\n{'='*70}")
     glob = core_metrics(y, p, threshold)
     print(f"GLOBAL  n={glob['n']}  acc={glob['acc']:.4f}  macro-F1={glob['macro_f1']:.4f}  "
-          f"F1(fake)={glob['f1_fake']:.4f}")
+          f"F1(fake)={glob['f1_fake']:.4f}  F1(true)={glob['f1_true']:.4f}")
+    for c in ("fake", "true"):
+        n_c = int((np.asarray(y).astype(int) == (1 if c == "fake" else 0)).sum())
+        print(f"  {c:<4}  n={n_c:<6} acc={glob['acc_' + c]:.4f}  "
+              f"precisao={glob['prec_' + c]:.4f}  recall={glob['acc_' + c]:.4f}  "
+              f"F1={glob['f1_' + c]:.4f}")
     print(f"        PR-AUC={glob['pr_auc']:.4f}  ROC-AUC={glob['roc_auc']:.4f}  "
           f"Brier={glob['brier']:.4f}  ECE={glob['ece']:.4f}")
 
@@ -691,11 +703,11 @@ def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     ap.add_argument("--prepare", action="store_true",
-                    help="delega para models.v6.prepare_v6 e sai (local)")
+                    help="delega para pipeline/prepare/prepare.py e sai (local)")
     ap.add_argument("--sanitized", default="data/FakenewsBR_sanitized_v6.csv")
     ap.add_argument("--labels", default="data/FakenewsBR_v6_labels.csv")
     ap.add_argument("--provenance", default="data/FakenewsBR_v6_provenance.csv")
-    ap.add_argument("--out-dir", default="models/v6/processed",
+    ap.add_argument("--out-dir", default="pipeline/prepare/processed",
                     help="out-dir do --prepare (nao confundir com --out)")
     ap.add_argument("--data", default=None)
     ap.add_argument("--splits", default=None)
@@ -856,7 +868,7 @@ def _vendored_data_sha() -> str:
 
 def run_check_vendor() -> int:
     root = Path(__file__).resolve().parents[2]
-    sys.path.insert(0, str(root))
+    sys.path.insert(0, str(root / "legacy"))
     try:
         from models import evaluate as EV
         import importlib
@@ -992,11 +1004,11 @@ def run_check_vendor() -> int:
 # ------------------------------------------------------------------ prepare
 def run_prepare(args) -> int:
     root = Path(__file__).resolve().parents[2]
-    sys.path.insert(0, str(root))
+    sys.path.insert(0, str(root / "pipeline" / "prepare"))
     try:
-        from models.v6 import prepare_v6
+        import prepare as prepare_v6
     except Exception as e:
-        print("[prepare] nao consegui importar models.v6.prepare_v6. No Colab, "
+        print("[prepare] nao consegui importar pipeline/prepare/prepare.py. No Colab, "
               "gere o parquet localmente e envie v6_pool.parquet/v6_splits.parquet. "
               f"({e})")
         return 2
@@ -1106,7 +1118,7 @@ def main(argv=None) -> int:
         if args.smoke:
             args.run_id += "_smoke"
     if args.out is None:
-        args.out = str(Path("models/v6/artifacts") / args.run_id)
+        args.out = str(Path("pipeline/train/artifacts") / args.run_id)
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
 

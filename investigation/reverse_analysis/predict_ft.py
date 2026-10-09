@@ -11,7 +11,7 @@ A primeira coisa que o script faz depois de inferir e conferir que reproduz a
 acuracia do log — se nao reproduzir, o split mudou e nada a jusante vale.
 
 Uso:
-    python -m investigation.reverse_analysis.predict_ft
+    PYTHONPATH=legacy python -m investigation.reverse_analysis.predict_ft
 """
 from __future__ import annotations
 
@@ -29,8 +29,8 @@ from models import data as D
 from models import evaluate as E
 from models.encoder import TextDS, infer
 
-ART = Path("models/artifacts/bertimbau_finetuned")
-OUT = Path("models/artifacts/preds_ft_classifier.csv")
+ART = Path("legacy/models/artifacts/bertimbau_finetuned")
+OUT = Path("legacy/models/artifacts/preds_ft_classifier.csv")
 LOGGED_TEST_ACC = 0.8655
 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Tabela comparativa dos testes em experimentos/runs/.
 
-Uso: python FakenewsBR_model/organizado/train/experimentos/analisar.py
+Uso: python pipeline/experiments/analisar.py
 
 Criterio de escolha: media do val_macro_f1 (epoca escolhida) nas seeds.
 val_worst_group e informativo. Metricas de TESTE so sao mostradas com
@@ -23,14 +23,14 @@ def carregar() -> pd.DataFrame:
     linhas = []
     for run in sorted((EXP_DIR / "runs").glob("*_s*")):
         mp = run / "metrics.json"
-        if not mp.exists():
+        teste, seed = run.name.rsplit("_s", 1)
+        if not mp.exists() or not seed.isdigit():  # ex.: D1_dedup_s42_perclass (rerun)
             continue
         m = json.loads(mp.read_text(encoding="utf-8"))
         hist = m.get("history") or []
         best_ep = m.get("best_epoch") or (len(hist) if hist else None)
         h = next((r for r in hist if r["epoch"] == best_ep), hist[-1] if hist else {})
         ult = hist[-1] if hist else {}
-        teste, seed = run.name.rsplit("_s", 1)
         test = m.get("test") or {}
         linhas.append({
             "teste": teste, "seed": int(seed), "epocas": len(hist), "best_ep": best_ep,

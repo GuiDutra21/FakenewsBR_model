@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 """prepare_v6.py -- CSVs v6 -> parquet enxuto + splits 3 vias + estatisticas.
 
-Roda UMA vez, no repo local (depende de `models.data` para reproduzir as regras
-de `train_label`, grupo, canal, `is_balanced_group` e `_safe_strat`). As saidas
-ficam fora do Git (`models/v6/.gitignore` ignora `processed/` e `artifacts/`).
+Roda UMA vez, no repo local (depende de `data.py`, copia de `legacy/models/data.py`,
+para reproduzir as regras de `train_label`, grupo, canal, `is_balanced_group` e
+`_safe_strat`). As saidas ficam fora do Git (`.gitignore` ignora `processed/`).
 
-Adaptacao do pipeline v4 (`models/v4/prepare_v4.py`, testado) para o POOL
+Adaptacao do pipeline v4 (`legacy/models/v4/prepare_v4.py`, testado) para o POOL
 COMPLETO da v6 (91.080 linhas rotuladas, 36 grupos). Deltas v6:
 
   - splits: `full_iid` (pool completo 70/10/5/15, default de treino),
@@ -46,17 +46,18 @@ import pandas as pd
 import torch
 
 ROOT = Path(__file__).resolve().parents[2]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+HERE = Path(__file__).resolve().parent
+if str(HERE) not in sys.path:
+    sys.path.insert(0, str(HERE))
 
-from models import data as D  # noqa: E402  (precisa do sys.path acima)
+import data as D  # noqa: E402  (copia de legacy/models/data.py; precisa do sys.path acima)
 
 TEXT_COL = D.TEXT_COL
 SPLIT_COLS = ("split_full_iid", "split_ood_wa", "split_bal_iid")
 SIDES_4 = ("train", "val_sel", "val_calib", "test")
 SIDES_3 = ("train", "val_sel", "val_calib")
 
-# Invariantes medidos no pool v6 (tolerancia 0; ver models/v6/BUILD_NOTES.md).
+# Invariantes medidos no pool v6 (tolerancia 0; ver docs/v6/BUILD_NOTES.md).
 EXPECTED_SANITIZED = 297_672
 EXPECTED_POOL = 91_080
 EXPECTED_FAKE = 66_772
@@ -714,7 +715,7 @@ def main(argv=None) -> int:
     ap.add_argument("--provenance", default=str(ROOT / "data" / "FakenewsBR_v6_provenance.csv"))
     ap.add_argument(
         "--out-dir",
-        default=str(ROOT / "organizado" / "prepare_data" / "processed"),
+        default=str(ROOT / "pipeline" / "prepare" / "processed"),
     )
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--test-frac", type=float, default=0.15)

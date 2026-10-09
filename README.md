@@ -8,7 +8,12 @@ anti-atalho (splits por cluster, DFR, calibração Platt, avaliação por grupo)
 > **TL;DR**
 > - **v6**: 297.672 linhas; pool de treino verificado de **91.080**
 >   (66.772 fake / 24.308 true); 36 grupos, 11 constantes (39.373 linhas).
-> - **R0** (BERTimbau base 100M, pool completo, 2 épocas em CPU): teste
+> - **Modelo final: `D1_dedup_s42`** (BERTimbau, pool v6 deduplicado, DFR +
+>   Platt): teste `full_iid` → **acc 0,8251 · macro-F1 0,7850 · pior-grupo
+>   0,6173 · ECE 0,0236**. Detalhes em
+>   [`docs/relatorio_tecnico/RELATORIO_TECNICO.md`](docs/relatorio_tecnico/RELATORIO_TECNICO.md);
+>   avaliação reproduzível em [`notebook/`](notebook/).
+> - **R0** (run anterior, sem dedup; BERTimbau base 100M, 2 épocas em CPU): teste
 >   `full_iid` → **acc 0,8163 · macro-F1 0,7782 · pior-grupo 0,5749 ·
 >   ECE 0,0188**. Pesos no **Release** (`modelo-v6-R0`).
 > - O FT **v1 antigo** no mesmo teste: 0,8051 / 0,6943 / pior 0,3008, com
@@ -25,18 +30,38 @@ anti-atalho (splits por cluster, DFR, calibração Platt, avaliação por grupo)
 ```
 README.md / LICENSE          este arquivo; código MIT
 data/                        CSVs/JSONs (os grandes ficam NO RELEASE, ver §Dados)
-docs/                        relatórios e cards (dataset/, v4/, v6/, pipeline-legado.md)
-docs/RELATORIO*.md           prestação de contas anterior (pipeline legado)
-scripts/                     sanitize_dataset.py (v1), eda_analysis.py
-models/                      pipeline legado (data/embed/encoder/score/evaluate)
-models/v4/                   prepare/train/explore/colab da v4 + processed + métricas
-models/v6/                   prepare/train/colab/compare/baseline/diagnose + processed + métricas
-models/v6/autoresearch/      23 runs + 4 controles + VERDICT/RELATORIO_MANHA/REVIEW_CRITICA
-models/v6/compare/           v1×v6, TF-IDF, predições e métricas
-investigation/               8 trilhas de análise + expansion/ (pipeline v2→v6)
+
+pipeline/                    >>> LINHA ATUAL (modelo final D1_dedup_s42) <<<
+  prepare/                   prepare.py (CSVs -> parquet + splits), dedup_exatas.py, data.py
+    processed/               pool v6 + splits (gerado)
+    processed_dedup/         pool v6 sem duplicatas exatas (gerado; usado pelo D1)
+  train/                     train_bertimbau_v6.py (+ cópia de trabalho do notebook)
+  experiments/               run_experiments.py (fila), analisar.py, status.json
+    runs/<run>/              métricas/predições de cada run; pesos só em D1_dedup_s42/best/
+    logs/                    logs de treino (não versionados)
+notebook/                    pacote autocontido de avaliação (notebook + modelo/ dados/
+                             resultados/ comparacao/); roda sozinho ou no Colab
+
+docs/
+  relatorio_tecnico/         RELATORIO_TECNICO .md/.pdf/.docx (entrega atual)
+  DATASET_CARD.md, SOURCES_AND_LICENSES.md, ...
+  v4/, v6/                   notas de build, planos e code reviews por versão
+  RELATORIO*.md              prestação de contas anterior (pipeline legado)
+investigation/               8 trilhas de análise + expansion/ (pipeline v2→v6 do dataset)
 plots/                       figuras da EDA
+graphify-out/                grafo do código gerado por ferramenta
+
+legacy/                      gerações anteriores (referência; não é o fluxo atual)
+  models/                    pipeline v1 (data/embed/encoder/score/evaluate) + artifacts
+  models/v4/                 prepare/train/explore/colab da v4 + processed + métricas
+  models/v6/                 run R0 (sem dedup), baseline TF-IDF, diagnose, colab
+  models/v6/autoresearch/    23 runs + 4 controles + VERDICT/RELATORIO_MANHA/REVIEW_CRITICA
+  models/v6/compare/         v1×v6, TF-IDF, predições e métricas
+  scripts/                   sanitize_dataset.py (v1), eda_analysis.py
 external/                    clones de referência (NÃO versionado, não redistribuir)
 ```
+
+Código legado que importa `models` roda com `PYTHONPATH=legacy` a partir da raiz.
 
 ## Dados
 
@@ -57,7 +82,7 @@ Pool de treino v6 (`train_label`, de `prepare_stats.json`):
 | near-dups cruzando splits (MinHash ≥0,8) | **0 pares** |
 | OOD `ood_wa` (WhatsApp retido) | treino 71.986 / teste 6.379 |
 
-Entradas com SHA256 registrado (`models/v6/processed/prepare_stats.json`):
+Entradas com SHA256 registrado (`legacy/models/v6/processed/prepare_stats.json`):
 `data/FakenewsBR_sanitized_v6.csv` `d3364da9…`,
 `data/FakenewsBR_v6_labels.csv` `8a0c36ff…`,
 `data/FakenewsBR_v6_provenance.csv` `5413be2c…`.
@@ -86,7 +111,7 @@ Entradas com SHA256 registrado (`models/v6/processed/prepare_stats.json`):
 
 ## Modelos
 
-### R0 — BERTimbau no pool v6 completo (o modelo do Release)
+### R0 — BERTimbau no pool v6 completo (run anterior ao dedup; pesos no Release `modelo-v6-R0`)
 
 `neuralmind/bert-base-portuguese-cased` (12 camadas, 768, 100M),
 ml192, freeze 6, lr 2e-5, warmup 0,1, batch 32, **2 épocas em CPU**
@@ -104,11 +129,11 @@ seed 42. Teste `full_iid` (n=13.661):
 | canais confiáveis: portal / covid / whatsapp / external_claim / agency_claim | 0,9718 / 0,8008 / 0,6652 / 0,6234 / 0,6815 |
 | pt-PT | 0,6992 |
 
-Artefatos no repo: `models/v6/artifacts/full_iid_ml192_f6_on_seed42/`
+Artefatos no repo: `legacy/models/v6/artifacts/full_iid_ml192_f6_on_seed42/`
 (`metrics.json`, `per_group.csv`, `predictions.csv`, `calibration.json`,
 logs). **Pesos (`best/`) só no Release.**
 
-### v1 antigo × v6 (mesmo teste, `models/v6/compare/`)
+### v1 antigo × v6 (mesmo teste, `legacy/models/v6/compare/`)
 
 | modelo × teste | acc | macro-F1 | pior-grupo | ECE |
 |---|---:|---:|---:|---:|
@@ -120,7 +145,7 @@ logs). **Pesos (`best/`) só no Release.**
 Leitura: no recorte limpo o v1 desaba no pior grupo (0,30); o R0 quase
 dobra isso (0,57) e calibra 3–5× melhor. OOD do R0 (R1) ainda pendente.
 
-### TF-IDF + LR + Platt (`models/v6/compare/baseline_tfidf/`)
+### TF-IDF + LR + Platt (`legacy/models/v6/compare/baseline_tfidf/`)
 
 Maioria: 0,7331/0,4230. LR calibrado@0,5: **0,8032 / 0,7404 / pior 0,5070 /
 ECE 0,0468**. Régua honesta: o R0 supera o linear em +0,038 de macro-F1 e
@@ -148,22 +173,32 @@ full — indica a direção dele.
 
 ## Reprodução
 
+Linha atual (modelo final `D1_dedup_s42`), a partir da raiz do repositório:
+
 ```bash
 # 1) dados do Release -> data/
-# 2) preparar (valida splits, near-dups, DFR; ~3 min em CPU)
-python models/v6/prepare_v6.py --force
-# 3) treinar R0 (~7h em CPU 8 threads; Colab T4: ~30-55 min, ver notebook)
-python models/v6/train_bertimbau_v6.py --data models/v6/processed/v6_pool.parquet \
-  --splits models/v6/processed/v6_splits.parquet --split-col full_iid \
-  --max-length 192 --freeze-layers 6 --epochs 2 --out models/v6/artifacts/R0
-# 4) baseline linear (~1 min) e diagnósticos
-python models/v6/baseline_tfidf.py
-python models/v6/diagnose_source_leak.py
-# 5) comparar com o v1 (requer os pesos do v1)
-python models/v6/compare_v1_vs_v6.py
+# 2) preparar (valida splits, near-dups, DFR; ~3 min em CPU) -> pipeline/prepare/processed/
+python pipeline/prepare/prepare.py --force
+# 3) remover duplicatas exatas do treino -> pipeline/prepare/processed_dedup/
+python pipeline/prepare/dedup_exatas.py
+# 4) fila de experimentos (BASE/T1..T9/D1_dedup) -> pipeline/experiments/runs/
+python pipeline/experiments/run_experiments.py --so D1_dedup_s42
+python pipeline/experiments/analisar.py
+# 5) avaliar: abrir notebook/avaliacao_modelo_fakenewsbr_v6.ipynb
 ```
 
-Notebook Colab (T4): `models/v6/colab_bertimbau_v6.ipynb` (21 células).
+Run R0 legado (sem dedup) e comparações:
+
+```bash
+python legacy/models/v6/train_bertimbau_v6.py --data legacy/models/v6/processed/v6_pool.parquet \
+  --splits legacy/models/v6/processed/v6_splits.parquet --split-col full_iid \
+  --max-length 192 --freeze-layers 6 --epochs 2 --out legacy/models/v6/artifacts/R0
+python legacy/models/v6/baseline_tfidf.py
+python legacy/models/v6/diagnose_source_leak.py
+python legacy/models/v6/compare_v1_vs_v6.py   # requer os pesos do v1
+```
+
+Notebook Colab (T4) do R0: `legacy/models/v6/colab_bertimbau_v6.ipynb` (21 células).
 Pipeline legado (score/Trilha A/B): `docs/pipeline-legado.md`.
 
 ## O que foi podado e por quê
@@ -174,6 +209,11 @@ métricas, predições e parquets processados**; o Release leva os binários
 (pesos duplicados do `best/`), 76 estados de otimizador (`optimizer.pt`
 etc.), 18 `best/` de smokes descartáveis, ONNX/embeddings do pipeline
 legado e os pesos do v1 (superados; métricas da comparação preservadas).
+
+Na reorganização de 09/10/2026 também saíram do disco (~25 GB): as 21 pastas
+`last/` dos experimentos e do R0, os `best/` de todos os runs exceto
+`D1_dedup_s42` (métricas e predições preservadas) e os zips `notebook.zip` /
+`model.zip` (geráveis a partir das pastas).
 
 **Optimizer states: não compensa subir.** Servem só para *retomar* um
 treino interrompido; o R0 terminou (melhor época salva + calibrada) e
