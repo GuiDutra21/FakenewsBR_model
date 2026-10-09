@@ -5,25 +5,58 @@ camadas que separam vereditos de checadores de manchetes rotuladas só por
 procedência — e o fine-tuning do **BERTimbau** sobre ele, com protocolo
 anti-atalho (splits por cluster, DFR, calibração Platt, avaliação por grupo).
 
-> **TL;DR**
-> - **v6**: 297.672 linhas; pool de treino verificado de **91.080**
->   (66.772 fake / 24.308 true); 36 grupos, 11 constantes (39.373 linhas).
-> - **Modelo final: `D1_dedup_s42`** (BERTimbau, pool v6 deduplicado, DFR +
->   Platt): teste `full_iid` → **acc 0,8251 · macro-F1 0,7850 · pior-grupo
->   0,6173 · ECE 0,0236**. Detalhes em
->   [`docs/relatorio_tecnico/RELATORIO_TECNICO.md`](docs/relatorio_tecnico/RELATORIO_TECNICO.md);
->   avaliação reproduzível em [`notebook/`](notebook/).
-> - **R0** (run anterior, sem dedup; BERTimbau base 100M, 2 épocas em CPU): teste
->   `full_iid` → **acc 0,8163 · macro-F1 0,7782 · pior-grupo 0,5749 ·
->   ECE 0,0188**. Pesos no **Release** (`modelo-v6-R0`).
-> - O FT **v1 antigo** no mesmo teste: 0,8051 / 0,6943 / pior 0,3008, com
->   **30,36% de contaminação** (treinou em parte do teste).
-> - Baseline **TF-IDF + LR + Platt**: 0,8032 / 0,7404 / pior 0,5070.
-> - **23 experimentos + 4 controles** (autoresearch) + review crítica:
->   treinar nos grupos informativos (+máscara de entidades) é a direção;
->   `freeze_layers=6` e `max_length=192` mantidos.
-> - Próximos passos: R0b (sem DFR, pausado), R1 (OOD) e o run completo
->   `informative+mask`.
+## Resultado do modelo final
+
+**Modelo:** BERTimbau base (`neuralmind/bert-base-portuguese-cased`) com
+ajuste fino sobre o pool v6 deduplicado, pesos DFR e calibração Platt.
+Run `D1_dedup_s42`, com os pesos em
+[`pipeline/experiments/runs/D1_dedup_s42/best/`](pipeline/experiments/runs/D1_dedup_s42/best/).
+
+**Teste:** 13.661 textos nunca vistos no treino (73% fake), com limiar de 0,5.
+
+| métrica | valor | leitura |
+|---|---:|---|
+| **Acurácia** | **82,5%** | acerta 4 de cada 5 textos |
+| **Macro-F1** | **0,785** | média do F1 das duas classes (não é inflada pela maioria fake) |
+| **Pior grupo (macro-F1)** | **0,617** | desempenho na fonte mais difícil (LIAR-BR) |
+| ROC-AUC / PR-AUC | 0,896 / 0,959 | qualidade da ordenação, sem depender do limiar |
+| ECE | 0,024 | a probabilidade é confiável (diz 80% → acerta cerca de 80%) |
+
+**Por classe**
+
+| classe | n | acertos da classe (recall) | precisão | F1 |
+|---|---:|---:|---:|---:|
+| fake | 10.015 | 85,8% | 89,9% | 0,878 |
+| true | 3.646 | 73,6% | 65,3% | 0,692 |
+
+**Comparação no mesmo teste**
+
+| modelo | acurácia | macro-F1 | pior grupo | ECE |
+|---|---:|---:|---:|---:|
+| Maioria (sempre "fake") | 0,733 | 0,423 | 0,272 | 0,267 |
+| TF-IDF + regressão logística | 0,803 | 0,740 | 0,507 | 0,047 |
+| v1 antigo¹ | 0,805 | 0,694 | 0,301 | 0,063 |
+| BERTimbau v6 R0 (antes do dedup) | 0,806 | 0,768 | 0,541 | 0,032 |
+| **BERTimbau v6 D1_dedup (final)** | **0,825** | **0,785** | **0,617** | **0,024** |
+
+¹ 30% do teste estava no treino do v1. Só na parte limpa, o v1 cai para 0,765 / 0,597.
+
+**Pontos fracos**
+
+- A classe **true** é a mais fraca: o modelo acerta 74% dos textos verdadeiros, contra 86% dos falsos.
+- Em **pt-PT** (Polígrafo), o macro-F1 é 0,689, contra 0,806 em pt-BR.
+- O pior grupo é o **LIAR-BR**, com 0,617: são alegações que exigem conhecimento externo.
+- O D1_dedup foi rodado só com a seed 42. As seeds 43 e 44 ainda faltam.
+
+O relatório completo está em
+[`docs/relatorio_tecnico/RELATORIO_TECNICO.md`](docs/relatorio_tecnico/RELATORIO_TECNICO.md).
+A avaliação reproduzível fica no notebook em [`notebook/`](notebook/), que recalcula
+todas as métricas acima.
+
+## Dataset em números
+
+- **v6:** 297.672 linhas; pool de treino verificado com **91.080** (66.772 fake / 24.308 true).
+- 36 grupos de origem, dos quais 11 têm rótulo constante (39.373 linhas).
 
 ## Mapa do repositório
 
@@ -109,7 +142,12 @@ Entradas com SHA256 registrado (`legacy/models/v6/processed/prepare_stats.json`)
 4. **TF-IDF é um baseline forte**: LR + Platt chega a 0,8032/0,7404.
    O BERT só se paga se passar disso **no pior grupo**, não na média.
 
-## Modelos
+## Histórico de modelos
+
+> Registro das versões anteriores. Os números abaixo são do **run original do
+> R0 em CPU**, que é o do Release. O R0 foi re-treinado depois, e a comparação
+> atual, no mesmo teste do modelo final, está em
+> [Resultado do modelo final](#resultado-do-modelo-final).
 
 ### R0 — BERTimbau no pool v6 completo (run anterior ao dedup; pesos no Release `modelo-v6-R0`)
 
